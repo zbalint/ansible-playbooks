@@ -8,3 +8,8 @@
     community.general.apk:
       name: docker,docker-compose
       update_cache: true
+  - name: Enabled and start docker service
+    ansible.builtin.service:
+      name: docker
+      enabled: yes
+      state: started

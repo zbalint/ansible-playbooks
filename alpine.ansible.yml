@@ -17,4 +17,4 @@
     ansible.builtin.user:
       name: tartarus
       uid: 4000
-      groups: sudo,docker
+      groups: docker

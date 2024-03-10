@@ -6,5 +6,5 @@ package_upgrade: true
 packages:
   - ansible
 runcmd:
-  - [ wget, "https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/alpine.yml", -O, "/run/alpine.yml" ]
-  - [ ansible-playbook, /run/alpine.yml ]
+  - [ wget, "https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/alpine.ansible.yml", -O, "/run/alpine.ansible.yml" ]
+  - [ ansible-playbook, /run/alpine.ansible.yml ]

@@ -1,0 +1,10 @@
+---
+- name: Setup Alpine in LXC
+  hosts: localhost
+  connection: local
+
+  tasks:
+  - name: Update packages and install docker
+    community.general.apk:
+      name: docker,docker-compose
+      update_cache: true

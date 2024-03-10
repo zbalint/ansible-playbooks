@@ -18,3 +18,15 @@
       name: tartarus
       uid: 4000
       groups: docker
+  - name: Create "services" directory
+    ansible.builtin.file:
+      path: /home/tartarus/services
+      state: directory
+      mode: '0755'
+  - name: Recursively change ownership of 'services' directory
+    ansible.builtin.file:
+      path: /home/tartarus/services
+      state: directory
+      recurse: yes
+      owner: tartarus
+      group: tartarus

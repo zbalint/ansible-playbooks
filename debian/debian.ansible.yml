@@ -1,0 +1,36 @@
+---
+- name: Setup Docker on Debian in LXC
+  hosts: localhost
+  connection: local
+  tasks:
+  - name: Update packages and install docker
+    community.general.apt:
+      name: docker,docker-compose,tailscale
+      update_cache: true
+  - name: Enabled and start docker service
+    ansible.builtin.service:
+      name: docker
+      enabled: yes
+      state: started
+  - name: Enabled and start tailscale service
+    ansible.builtin.service:
+      name: tailscale
+      enabled: yes
+      state: started
+  - name: Create user "tartarus"
+    ansible.builtin.user:
+      name: tartarus
+      uid: 4000
+      groups: docker
+  - name: Create "services" directory
+    ansible.builtin.file:
+      path: /home/tartarus/services
+      state: directory
+      mode: '0755'
+  - name: Recursively change ownership of 'services' directory
+    ansible.builtin.file:
+      path: /home/tartarus/services
+      state: directory
+      recurse: yes
+      owner: tartarus
+      group: tartarus

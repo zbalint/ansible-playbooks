@@ -12,7 +12,8 @@
       name: 
         - docker
         - docker-compose
-      state: present
+        - docker-compose-plugin
+      state: latest
   - name: Enabled and start docker service
     ansible.builtin.service:
       name: docker

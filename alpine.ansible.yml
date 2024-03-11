@@ -1,13 +1,18 @@
 ---
-- name: Setup Alpine in LXC
+- name: Setup Docker on Alpine in LXC
   hosts: localhost
   connection: local
 
   tasks:
   - name: Update packages and install docker
-    community.general.apk:
-      name: sudo,docker,docker-compose
-      update_cache: true
+    # community.general.apk:
+    #   name: sudo,docker,docker-compose
+    #   update_cache: true
+    ansible.builtin.package:
+      name: 
+        - docker
+        - docker-compose
+      state: present
   - name: Enabled and start docker service
     ansible.builtin.service:
       name: docker

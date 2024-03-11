@@ -5,7 +5,7 @@
   tasks:
   - name: Download setup_debian_docker.sh
     ansible.builtin.get_url:
-      url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/setup_debian_docker.yml
+      url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/setup_debian_docker.sh
       dest: /run/setup_debian_docker.sh
       mode: '0440'
   - name: Run setup_debian_docker.sh

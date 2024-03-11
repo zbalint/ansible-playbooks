@@ -5,7 +5,7 @@
   tasks:
   - name: Update packages and install docker
     community.general.apk:
-      name: docker,docker-compose
+      name: docker,docker-compose,tailscale
       update_cache: true
   - name: Enabled and start docker service
     ansible.builtin.service:

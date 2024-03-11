@@ -2,25 +2,16 @@
 - name: Setup Docker on Alpine in LXC
   hosts: localhost
   connection: local
-  roles:
-    - geerlingguy.docker
-
-  # tasks:
-  # - name: Update packages and install docker
-    # community.general.apk:
-    #   name: sudo,docker,docker-compose
-    #   update_cache: true
-    # ansible.builtin.package:
-    #   name: 
-    #     - docker
-    #     - docker-compose
-    #     - docker-compose-plugin
-    #   state: latest
-  # - name: Enabled and start docker service
-  #   ansible.builtin.service:
-  #     name: docker
-  #     enabled: yes
-  #     state: started
+  tasks:
+  - name: Update packages and install docker
+    community.general.apk:
+      name: docker,docker-compose
+      update_cache: true
+  - name: Enabled and start docker service
+    ansible.builtin.service:
+      name: docker
+      enabled: yes
+      state: started
   - name: Create user "tartarus"
     ansible.builtin.user:
       name: tartarus

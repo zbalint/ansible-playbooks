@@ -12,6 +12,11 @@
       name: docker
       enabled: yes
       state: started
+  - name: Enabled and start tailscale service
+    ansible.builtin.service:
+      name: tailscale
+      enabled: yes
+      state: started
   - name: Create user "tartarus"
     ansible.builtin.user:
       name: tartarus

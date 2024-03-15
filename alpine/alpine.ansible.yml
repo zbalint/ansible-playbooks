@@ -24,24 +24,24 @@
       groups: docker
   - name: Create "docker" directory
     ansible.builtin.file:
-      path: /home/tartarus/docker
+      path: /opt/docker
       state: directory
       mode: '0755'
   - name: Recursively change ownership of 'docker' directory
     ansible.builtin.file:
-      path: /home/tartarus/docker
+      path: /opt/docker
       state: directory
       recurse: yes
       owner: tartarus
       group: tartarus
   - name: Create "docker-data" directory
     ansible.builtin.file:
-      path: /home/tartarus/docker-data
+      path: /opt/docker-data
       state: directory
       mode: '0755'
   - name: Recursively change ownership of 'docker-data' directory
     ansible.builtin.file:
-      path: /home/tartarus/docker-data
+      path: /opt/docker-data
       state: directory
       recurse: yes
       owner: tartarus

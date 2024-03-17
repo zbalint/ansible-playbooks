@@ -5,7 +5,7 @@
   tasks:
   - name: Update packages and install docker
     community.general.apk:
-      name: docker,docker-compose,tailscale
+      name: bash,docker,docker-compose,tailscale
       update_cache: true
   - name: Create user "tartarus"
     ansible.builtin.user:

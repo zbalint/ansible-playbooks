@@ -4,10 +4,11 @@
   connection: local
   tasks:
   - name: Update packages and install podman
-    community.builtin.apt:
-      pkg:
+    ansible.builtin.package:
+      name:
         - podman
         - slirp4netns
+      state: latest
   - name: Create user "tartarus"
     ansible.builtin.user:
       name: tartarus

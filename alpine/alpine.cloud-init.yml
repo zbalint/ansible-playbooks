@@ -1,5 +1,5 @@
 #cloud-config
-locale: en_US
+locale: en_US.UTF-8
 timezone: "Europe/Budapest"
 package_update: true
 package_upgrade: true

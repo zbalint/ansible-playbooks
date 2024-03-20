@@ -1,12 +1,13 @@
 ---
-- name: Setup Podman on Alpine in LXC
+- name: Setup Podman on Debian in LXC
   hosts: localhost
   connection: local
   tasks:
   - name: Update packages and install podman
-    community.general.apk:
-      name: bash,podman,slirp4netns
-      update_cache: true
+    community.builtin.apt:
+      pkg:
+        - podman
+        - slirp4netns
   - name: Create user "tartarus"
     ansible.builtin.user:
       name: tartarus

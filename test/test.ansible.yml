@@ -1,0 +1,41 @@
+---
+- name: Setup Podman on Alpine in LXC
+  hosts: localhost
+  connection: local
+  tasks:
+  - name: Update packages and install podman
+    community.general.apk:
+      name: bash,podman,slirp4netns
+      update_cache: true
+  - name: Create user "tartarus"
+    ansible.builtin.user:
+      name: tartarus
+      uid: 4000
+      # groups: podman
+  - name: Change subuid and subguid
+    command: usermod --add-subuids 100000-165535 --add-subgids 100000-165535 tartarus
+  - name: Create "/opt/podman/stacks" directory
+    ansible.builtin.file:
+      path: /opt/podman/stacks
+      state: directory
+      mode: '0755'
+  - name: Recursively change ownership of '/opt/podman/stacks' directory
+    ansible.builtin.file:
+      path: /opt/podman/stacks
+      state: directory
+      recurse: yes
+      owner: tartarus
+      group: tartarus
+  - name: Create "/opt/podman/volumes" directory
+    ansible.builtin.file:
+      path: /opt/podman/volumes
+      state: directory
+      mode: '0755'
+  - name: Recursively change ownership of '/opt/podman/volumes' directory
+    ansible.builtin.file:
+      path: /opt/podman/volumes
+      state: directory
+      recurse: yes
+      owner: tartarus
+      group: tartarus
+  

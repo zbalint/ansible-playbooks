@@ -7,6 +7,7 @@
     ansible.builtin.package:
       name:
         - podman
+        - podman-compose
         - slirp4netns
       state: latest
   - name: Create user "tartarus"

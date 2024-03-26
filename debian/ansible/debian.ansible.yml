@@ -1,26 +1,15 @@
 ---
-- name: Setup Debian in VM
+- name: Setup Docker on Debian in VM
   hosts: localhost
   connection: local
   tasks:
-  - name: Update apt repository
-    ansible.builtin.apt:
-      update_cache: yes
-  - name: Install curl  (state=present is optional)
-    ansible.builtin.apt:
-      name: curl
-      state: present
-  - name: Add Kopia repo key
-    command: curl -s https://kopia.io/signing-key | gpg --dearmor -o /etc/apt/keyrings/kopia-keyring.gpg
-  - name: Add Kopia repo to source list
-    command: echo "deb [signed-by=/etc/apt/keyrings/kopia-keyring.gpg] http://packages.kopia.io/apt/ stable main" | tee /etc/apt/sources.list.d/kopia.list
-  - name: Update apt repository
-    ansible.builtin.apt:
-      update_cache: yes
-  - name: Install kopia (state=present is optional)
-    ansible.builtin.apt:
-      name: kopia
-      state: present
+  - name: Download setup_kopia.sh
+    ansible.builtin.get_url:
+      url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_kopia.sh
+      dest: /run/setup_kopia.sh
+      mode: '0440'
+  - name: Run setup_kopia.sh
+    command: bash /run/setup_kopia.sh
   - name: Create user "tartarus"
     ansible.builtin.user:
       name: tartarus

@@ -14,7 +14,6 @@
     ansible.builtin.user:
       name: tartarus
       uid: 4000
-      groups: docker
   - name: Create "/opt/docker/stacks" directory
     ansible.builtin.file:
       path: /opt/docker/stacks

@@ -10,8 +10,13 @@
       mode: '0440'
   - name: Run setup_debian_docker.sh
     command: bash /run/setup_debian_docker.sh
+  - name: Download setup_tailscale.sh
+    ansible.builtin.get_url:
+      url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_tailscale.sh
+      dest: /run/setup_tailscale.sh
+      mode: '0440'
   - name: Install tailscale
-    command: curl -fsSL https://tailscale.com/install.sh | sh  
+    command: bash /run/setup_tailscale.sh
   - name: Create user "tartarus"
     ansible.builtin.user:
       name: tartarus

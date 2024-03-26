@@ -17,4 +17,4 @@ echo \
   tee /etc/apt/sources.list.d/kopia.list
 
 apt-get update && \
-apt-get install kopia -y && \
+apt-get install kopia -y

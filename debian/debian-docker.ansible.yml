@@ -1,5 +1,5 @@
 ---
-- name: Setup Docker on Debian in LXC
+- name: Setup Docker on Debian in VM
   hosts: localhost
   connection: local
   tasks:

@@ -1,12 +1,19 @@
 ---
-- name: Setup Docker on Alpine in VM
+- name: Setup Debian in VM
   hosts: localhost
   connection: local
   tasks:
-  - name: Update packages and install docker
-    community.general.apk:
-      name: bash,docker,docker-compose,tailscale
-      update_cache: true
+  - name: Add Kopia repo key
+    command: curl -s https://kopia.io/signing-key | gpg --dearmor -o /etc/apt/keyrings/kopia-keyring.gpg
+  - name: Add Kopia repo to source list
+    command: echo "deb [signed-by=/etc/apt/keyrings/kopia-keyring.gpg] http://packages.kopia.io/apt/ stable main" | tee /etc/apt/sources.list.d/kopia.list
+  - name: Update apt repository
+    ansible.builtin.apt:
+      update_cache: yes
+  - name: Install apache httpd  (state=present is optional)
+    ansible.builtin.apt:
+      name: kopia
+      state: present
   - name: Create user "tartarus"
     ansible.builtin.user:
       name: tartarus
@@ -36,14 +43,3 @@
       recurse: yes
       owner: tartarus
       group: tartarus
-  - name: Enabled and start docker service
-    ansible.builtin.service:
-      name: docker
-      enabled: yes
-      state: started
-  - name: Enabled and start tailscale service
-    ansible.builtin.service:
-      name: tailscale
-      enabled: yes
-      state: started
-  

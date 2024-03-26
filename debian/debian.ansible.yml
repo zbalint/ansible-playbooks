@@ -3,6 +3,13 @@
   hosts: localhost
   connection: local
   tasks:
+  - name: Update apt repository
+    ansible.builtin.apt:
+      update_cache: yes
+  - name: Install curl  (state=present is optional)
+    ansible.builtin.apt:
+      name: curl
+      state: present
   - name: Add Kopia repo key
     command: curl -s https://kopia.io/signing-key | gpg --dearmor -o /etc/apt/keyrings/kopia-keyring.gpg
   - name: Add Kopia repo to source list
@@ -10,7 +17,7 @@
   - name: Update apt repository
     ansible.builtin.apt:
       update_cache: yes
-  - name: Install apache httpd  (state=present is optional)
+  - name: Install kopia (state=present is optional)
     ansible.builtin.apt:
       name: kopia
       state: present

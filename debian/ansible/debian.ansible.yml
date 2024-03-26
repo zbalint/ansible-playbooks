@@ -14,27 +14,3 @@
     ansible.builtin.user:
       name: tartarus
       uid: 4000
-  - name: Create "/opt/docker/stacks" directory
-    ansible.builtin.file:
-      path: /opt/docker/stacks
-      state: directory
-      mode: '0755'
-  - name: Recursively change ownership of '/opt/docker/stacks' directory
-    ansible.builtin.file:
-      path: /opt/docker/stacks
-      state: directory
-      recurse: yes
-      owner: tartarus
-      group: tartarus
-  - name: Create "/opt/docker/volumes" directory
-    ansible.builtin.file:
-      path: /opt/docker/volumes
-      state: directory
-      mode: '0755'
-  - name: Recursively change ownership of '/opt/docker/volumes' directory
-    ansible.builtin.file:
-      path: /opt/docker/volumes
-      state: directory
-      recurse: yes
-      owner: tartarus
-      group: tartarus

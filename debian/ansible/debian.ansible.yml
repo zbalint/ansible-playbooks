@@ -10,6 +10,8 @@
       mode: '0440'
   - name: Run setup_kopia.sh
     command: bash /run/setup_kopia.sh
+  - name: Install tailscale
+    command: curl -fsSL https://tailscale.com/install.sh | sh
   - name: Create user "tartarus"
     ansible.builtin.user:
       name: tartarus

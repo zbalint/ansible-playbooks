@@ -41,9 +41,9 @@
       url: https://raw.githubusercontent.com/zbalint/systemd-services/main/kopia-server/kopia-server.service
       dest: /home/kopia/.config/systemd/user/kopia-server.service
       mode: '0440'
-  - name: Recursively change ownership of '/home/kopia/.config/systemd/user' directory
+  - name: Recursively change ownership of '/home/kopia/.config' directory
     ansible.builtin.file:
-      path: /home/kopia/.config/systemd/user
+      path: /home/kopia/.config
       state: directory
       recurse: yes
       owner: kopia

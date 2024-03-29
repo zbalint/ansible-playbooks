@@ -1,15 +1,8 @@
 ---
-- name: Setup Docker on Debian in VM
+- name: Setup Debian in VM
   hosts: localhost
   connection: local
   tasks:
-  - name: Download setup_kopia.sh
-    ansible.builtin.get_url:
-      url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_kopia.sh
-      dest: /run/setup_kopia.sh
-      mode: '0440'
-  - name: Run setup_kopia.sh
-    command: bash /run/setup_kopia.sh
   - name: Download setup_tailscale.sh
     ansible.builtin.get_url:
       url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_tailscale.sh

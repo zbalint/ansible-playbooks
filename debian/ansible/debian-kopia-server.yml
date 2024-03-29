@@ -19,6 +19,11 @@
       path: /home/kopia/conf
       state: directory
       mode: '0755'
+  - name: Download kopia-server.env
+    ansible.builtin.get_url:
+      url: https://raw.githubusercontent.com/zbalint/systemd-services/main/kopia-server/kopia-server.env
+      dest: /home/kopia/conf/kopia-server.env
+      mode: '0440'
   - name: Recursively change ownership of '/home/kopia/conf' directory
     ansible.builtin.file:
       path: /home/kopia/conf
@@ -31,6 +36,11 @@
       path: /home/kopia/.config/systemd/user
       state: directory
       mode: '0755'
+  - name: Download kopia-server.service
+    ansible.builtin.get_url:
+      url: https://raw.githubusercontent.com/zbalint/systemd-services/main/kopia-server/kopia-server.service
+      dest: /home/kopia/.config/systemd/user/kopia-server.service
+      mode: '0440'
   - name: Recursively change ownership of '/home/kopia/.config/systemd/user' directory
     ansible.builtin.file:
       path: /home/kopia/.config/systemd/user
@@ -38,15 +48,12 @@
       recurse: yes
       owner: kopia
       group: kopia
-  - name: Download kopia-server.service
-    ansible.builtin.get_url:
-      url: https://raw.githubusercontent.com/zbalint/systemd-services/main/kopia-server/kopia-server.service
-      dest: /home/kopia/.config/systemd/user/kopia-server.service
-      mode: '0440'
-  - name: Download kopia-server.env
-    ansible.builtin.get_url:
-      url: https://raw.githubusercontent.com/zbalint/systemd-services/main/kopia-server/kopia-server.env
-      dest: /home/kopia/conf/kopia-server.env
-      mode: '0440'
+  - name: Recursively change ownership of '/repository' directory
+    ansible.builtin.file:
+      path: /repository
+      state: directory
+      recurse: yes
+      owner: kopia
+      group: kopia
   - name: Enable long running systemd services for kopia user
     command: loginctl enable-linger kopia

@@ -43,5 +43,10 @@
       url: https://raw.githubusercontent.com/zbalint/systemd-services/main/kopia-server/kopia-server.service
       dest: /home/kopia/.config/systemd/user/kopia-server.service
       mode: '0440'
+  - name: Download kopia-server.env
+    ansible.builtin.get_url:
+      url: https://raw.githubusercontent.com/zbalint/systemd-services/main/kopia-server/kopia-server.env
+      dest: /home/kopia/conf/kopia-server.env
+      mode: '0440'
   - name: Enable long running systemd services for kopia user
     command: loginctl enable-linger kopia

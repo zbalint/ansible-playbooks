@@ -43,3 +43,5 @@
       url: https://raw.githubusercontent.com/zbalint/systemd-services/main/kopia-server/kopia-server.service
       dest: /home/kopia/.config/systemd/user/kopia-server.service
       mode: '0440'
+  - name: Enable long running systemd services for kopia user
+    command: loginctl enable-linger kopia

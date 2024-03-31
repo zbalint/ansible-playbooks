@@ -1,2 +1,0 @@
-
-loginctl enable-linger kopia

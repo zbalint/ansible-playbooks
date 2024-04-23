@@ -22,6 +22,7 @@
       name: tartarus
       uid: 4000
       groups: docker
+      shell: /bin/bash
   - name: Create "/opt/docker/stacks" directory
     ansible.builtin.file:
       path: /opt/docker/stacks

@@ -8,8 +8,15 @@
       url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_debian_docker.sh
       dest: /run/setup_debian_docker.sh
       mode: '0440'
-  - name: Run setup_debian_docker.sh
+  - name: Install docker
     command: bash /run/setup_debian_docker.sh
+  - name: Download setup_debian_kopia.sh
+    ansible.builtin.get_url:
+      url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_debian_kopia.sh
+      dest: /run/setup_debian_kopia.sh
+      mode: '0440'
+  - name: Install kopia
+    command: bash /run/setup_debian_kopia.sh
   - name: Download setup_tailscale.sh
     ansible.builtin.get_url:
       url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_tailscale.sh
@@ -17,6 +24,7 @@
       mode: '0440'
   - name: Install tailscale
     command: bash /run/setup_tailscale.sh
+    
   - name: Create user "tartarus"
     ansible.builtin.user:
       name: tartarus

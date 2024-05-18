@@ -1,5 +1,5 @@
 ---
-- name: Setup Kopia server on Debian in VM
+- name: Setup Kopia on Debian
   hosts: localhost
   connection: local
   tasks:
@@ -8,46 +8,12 @@
       url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_debian_kopia.sh
       dest: /run/setup_debian_kopia.sh
       mode: '0440'
-  - name: Run setup_debian_kopia.sh
+  - name: Install kopia
     command: bash /run/setup_debian_kopia.sh
   - name: Create user "kopia"
     ansible.builtin.user:
       name: kopia
       uid: 4001
-  - name: Create "/home/kopia/conf" directory
-    ansible.builtin.file:
-      path: /home/kopia/conf
-      state: directory
-      mode: '0755'
-  - name: Download kopia-server.env
-    ansible.builtin.get_url:
-      url: https://raw.githubusercontent.com/zbalint/systemd-services/main/kopia-server/kopia-server.env
-      dest: /home/kopia/conf/kopia-server.env
-      mode: '0440'
-  - name: Recursively change ownership of '/home/kopia/conf' directory
-    ansible.builtin.file:
-      path: /home/kopia/conf
-      state: directory
-      recurse: yes
-      owner: kopia
-      group: kopia
-  - name: Create "/home/kopia/.config/systemd/user" directory
-    ansible.builtin.file:
-      path: /home/kopia/.config/systemd/user
-      state: directory
-      mode: '0755'
-  - name: Download kopia-server.service
-    ansible.builtin.get_url:
-      url: https://raw.githubusercontent.com/zbalint/systemd-services/main/kopia-server/kopia-server.service
-      dest: /home/kopia/.config/systemd/user/kopia-server.service
-      mode: '0440'
-  - name: Recursively change ownership of '/home/kopia/.config' directory
-    ansible.builtin.file:
-      path: /home/kopia/.config
-      state: directory
-      recurse: yes
-      owner: kopia
-      group: kopia
   - name: Recursively change ownership of '/repository' directory
     ansible.builtin.file:
       path: /repository
@@ -55,5 +21,3 @@
       recurse: yes
       owner: kopia
       group: kopia
-  - name: Enable long running systemd services for kopia user
-    command: loginctl enable-linger kopia

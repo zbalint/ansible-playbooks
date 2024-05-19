@@ -3,6 +3,10 @@
   hosts: localhost
   connection: local
   tasks:
+  - name: Update repositories cache and install "sshfs" package
+    ansible.builtin.apt:
+      name: sshfs
+      update_cache: yes
   - name: Download setup_debian_kopia.sh
     ansible.builtin.get_url:
       url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_debian_kopia.sh

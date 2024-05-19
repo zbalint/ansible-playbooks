@@ -3,6 +3,10 @@
   hosts: localhost
   connection: local
   tasks:
+  - name: Update repositories cache and install "curl" package
+    ansible.builtin.apt:
+      name: curl
+      update_cache: yes
   - name: Download setup_tailscale.sh
     ansible.builtin.get_url:
       url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_tailscale.sh

@@ -75,6 +75,17 @@ function var_is_empty() {
     return 1
 }
 
+function var_is_equals() {
+    local var="$1"
+    local str="$2"
+
+    if [ "${var}" == "${str}" ]; then
+        return 0
+    fi
+
+    return 1
+}
+
 function file_is_exists() {
     local file="$1"
     
@@ -159,7 +170,7 @@ function save_mount_path() {
 function sshfs_mount() {
     local remote_user="$1"
     local remote_host="$2"
-    local sshfs_options="ro,reconnect,compression=no,Ciphers=chacha20-poly1305@openssh.com"
+    local sshfs_options="ro,reconnect,cache=no,compression=no,Ciphers=chacha20-poly1305@openssh.com"
     local remote_path="$3"
     local local_path="$4"
 
@@ -182,6 +193,13 @@ function create_backup() {
     local local_path="$6"
 
     bash ${BACKUP_HELPER_SCRIPT} backup "${repository_path}" "${repository_password}" "${remote_user}" "${remote_host}" "${remote_path}" "${local_path}"
+}
+
+function init_repository() {
+    local repository_path="$1"
+    local repository_password="$2"
+
+    bash ${BACKUP_HELPER_SCRIPT} init "${repository_path}" "${repository_password}"
 }
 
 function check_repository() {
@@ -233,7 +251,20 @@ function backup() {
     maintenance_repository "${repository_path}" "${repository_password}"
 }
 
+function valiate_args() {
+    local command="$1"
+
+    if var_is_empty "${command}"; then
+        log_error "Invalid command! Usage: bash backup_helper.sh <init|backup>"
+        exit 1
+    fi
+}
+
 function init() {
+    local command="$1"
+
+    valiate_args "${command}"
+
     if file_is_exists "${REPOSITORY_TYPE_FILE}"; then
         local repository_type=$(get_repository_type)
 
@@ -301,13 +332,24 @@ function init() {
 }
 
 function main() {
+    local command="$1"
     local repository_path="${REPOSITORY_PATH}"
     local repository_password="${REPOSITORY_PASSWORD}"
     local client_list_file="${REPOSITORY_CLIENT_LIST_FILE}"
 
-    backup "${repository_path}" "${repository_password}" "${client_list_file}"
-    return 0
+    case "${command}" in
+        init)
+            init_repository "${repository_path}" "${repository_password}"
+            ;;
+        backup)
+            backup "${repository_path}" "${repository_password}" "${client_list_file}"
+            ;;
+        *)
+            log_error "Invalid command! Usage: bash backup_helper.sh <init|backup>"
+            exit 1
+            ;;
+    esac
 }
 
-init
-main
+init $@
+main $@

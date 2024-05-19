@@ -80,6 +80,13 @@ function create_snapshot() {
     KOPIA_CHECK_FOR_UPDATES=false kopia snapshot create "${local_path}" --description "${remote_user}@${remote_host}:${remote_path}"
 }
 
+function init_repository() {
+    local repository_path="$1"
+    local repository_password="$2"
+    
+    KOPIA_CHECK_FOR_UPDATES=false kopia repository create filesystem --ecc-overhead-percent 10 --path="${repository_path}"
+}
+
 function check_repository() {
     KOPIA_CHECK_FOR_UPDATES=false kopia snapshot verify
 }
@@ -162,6 +169,8 @@ function init() {
     else 
         if var_is_equals "${command}" "cleanup"; then
             return 0
+        elif var_is_equals "${command}" "init"; then
+            valiate_args_creds_only "${repository_path}" "${repository_password}"
         elif var_is_equals "${command}" "check"; then
             valiate_args_creds_only "${repository_path}" "${repository_password}"
         elif var_is_equals "${command}" "maintenance"; then
@@ -183,6 +192,10 @@ function main() {
     local local_path="$7"
 
     case "${command}" in
+        init)
+            init_repository "${repository_path}" "${repository_password}" && \
+            report_error
+            ;;
         backup)
             connect_repository "${repository_path}" "${repository_password}" "${remote_user}" "${remote_host}" && \
             create_snapshot "${remote_user}" "${remote_host}" "${remote_path}" "${local_path}" && \
@@ -210,8 +223,6 @@ function main() {
             exit 1
             ;;
     esac
-
-    return 0
 }
 
 init $@

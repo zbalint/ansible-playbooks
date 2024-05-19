@@ -83,6 +83,13 @@ function create_snapshot() {
     RESTIC_PASSWORD="${repository_password}" restic -r "${repository_path}" backup "${local_path}" --tag "${remote_user}@${remote_host}:${remote_path}"
 }
 
+function init_repository() {
+    local repository_path="$1"
+    local repository_password="$2"
+    
+    RESTIC_PASSWORD="${repository_password}" restic -r "${repository_path}" init
+}
+
 function check_repository() {
     local repository_path="$1"
     local repository_password="$2"
@@ -170,6 +177,8 @@ function init() {
     else 
         if var_is_equals "${command}" "cleanup"; then
             return 0
+        elif var_is_equals "${command}" "init"; then
+            valiate_args_creds_only "${repository_path}" "${repository_password}"
         elif var_is_equals "${command}" "check"; then
             valiate_args_creds_only "${repository_path}" "${repository_password}"
         elif var_is_equals "${command}" "maintenance"; then
@@ -191,6 +200,10 @@ function main() {
     local local_path="$7"
 
     case "${command}" in
+        init)
+            init_repository "${repository_path}" "${repository_password}" && \
+            report_error
+            ;;
         backup)
             connect_repository "${repository_path}" "${repository_password}" "${remote_user}" "${remote_host}" && \
             create_snapshot "${repository_path}" "${repository_password}" "${remote_user}" "${remote_host}" "${remote_path}" "${local_path}" && \
@@ -220,8 +233,6 @@ function main() {
             exit 1
             ;;
     esac
-
-    return 0
 }
 
 init $@

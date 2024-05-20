@@ -207,8 +207,6 @@ function main() {
         backup)
             connect_repository "${repository_path}" "${repository_password}" "${remote_user}" "${remote_host}" && \
             create_snapshot "${repository_path}" "${repository_password}" "${remote_user}" "${remote_host}" "${remote_path}" "${local_path}" && \
-            check_repository "${repository_path}" "${repository_password}" && \
-            maintenance_repository "${repository_path}" "${repository_password}" && \
             disconnect_repository || \
             report_error
             ;;

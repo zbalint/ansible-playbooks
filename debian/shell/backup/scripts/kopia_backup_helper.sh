@@ -83,7 +83,7 @@ function create_snapshot() {
 function init_repository() {
     local repository_path="$1"
     local repository_password="$2"
-    
+
     KOPIA_CHECK_FOR_UPDATES=false kopia repository create filesystem --ecc-overhead-percent 10 --path="${repository_path}"
 }
 

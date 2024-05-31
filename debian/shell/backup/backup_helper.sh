@@ -9,9 +9,11 @@ readonly REPOSITORY_TYPE_FILE="${CONFIG_DIR}/repository_type"
 readonly REPOSITORY_PATH_FILE="${CONFIG_DIR}/repository_path"
 readonly REPOSITORY_PASSWORD_FILE="${CONFIG_DIR}/repository_creds"
 readonly REPOSITORY_CLIENT_LIST_FILE="${CONFIG_DIR}/repository_clients"
+readonly HEALTHCHECK_IO_ID_FILE="${CONFIG_DIR}/healthcheck_io_id"
 REPOSITORY_TYPE=""
 REPOSITORY_PATH=""
 REPOSITORY_PASSWORD=""
+HEALTHCHECK_IO_ID=""
 BACKUP_HELPER_SCRIPT=""
 
 function print_log() {
@@ -136,6 +138,10 @@ function get_repository_password() {
     read_file "${REPOSITORY_PASSWORD_FILE}"
 }
 
+function get_healthcheck_io_id() {
+    read_file "${HEALTHCHECK_IO_ID_FILE}"
+}
+
 function get_remote_user() {
     local client="$1"
     echo "${client}" | cut -d ";" -f 1
@@ -221,6 +227,20 @@ function send_notification() {
     log_warn "Notification sending not implemented!"
 }
 
+function ping_healthcheck() {
+    # using curl (10 second timeout, retry up to 5 times):
+    curl -m 10 --retry 5 https://hc-ping.com/"${HEALTHCHECK_IO_ID}"
+}
+
+function snapshots() {
+    local repository_path="$1"
+    local repository_password="$2"
+
+
+    bash ${BACKUP_HELPER_SCRIPT} snapshots "${repository_path}" "${repository_password}"
+}
+
+
 function backup_client() {
     local repository_path="$1"
     local repository_password="$2"
@@ -248,7 +268,8 @@ function backup() {
     done < "${client_list_file}"
 
     check_repository "${repository_path}" "${repository_password}" && \
-    maintenance_repository "${repository_path}" "${repository_password}"
+    maintenance_repository "${repository_path}" "${repository_password}" && \
+    ping_healthcheck
 }
 
 function valiate_args() {
@@ -256,6 +277,29 @@ function valiate_args() {
 
     if var_is_empty "${command}"; then
         log_error "Invalid command! Usage: bash backup_helper.sh <init|backup>"
+        exit 1
+    fi
+}
+
+function valiate_restore_args() {
+    local command="$1"
+    local client_id="$2"
+    local snapshot_id="$3"
+
+    if var_is_empty "${command}"; then
+        log_error "Invalid command! Usage: bash backup_helper.sh <init|backup|snapshots|restore>"
+        exit 1
+    fi
+
+    if var_is_empty "${client_id}"; then
+        log_error "Client ID is required! Usage: bash backup_helper.sh restore {client_id} {snapshot_id}"
+        log_info "Possible client ids:"
+        cat "${REPOSITORY_CLIENT_LIST_FILE}"
+        exit 1
+    fi
+
+    if var_is_empty "${snapshot_id}"; then
+        log_error "Snapshot ID is required! Usage: bash backup_helper.sh restore {client_id} {snapshot_id}"
         exit 1
     fi
 }
@@ -327,12 +371,28 @@ function init() {
         log_error "Repository client config file does not exists! Missing file: ${REPOSITORY_CLIENT_LIST_FILE}"
         exit 1
     fi
+
+     if file_is_exists "${HEALTHCHECK_IO_ID_FILE}"; then
+        local healthcheck_io_id=$(get_healthcheck_io_id)
+
+        if var_is_empty "${healthcheck_io_id}"; then
+            log_error "Healthcheck.io ID is not set!"
+            exit 1
+        else 
+            HEALTHCHECK_IO_ID="${healthcheck_io_id}"
+        fi
+    else
+        log_error "Healthcheck.io ID config file does not exists! Missing file: ${HEALTHCHECK_IO_ID_FILE}"
+        exit 1
+    fi
     
     rm -f "${LOCAL_MOUNT_PATH_LIST_FILE}" && touch "${LOCAL_MOUNT_PATH_LIST_FILE}"
 }
 
 function main() {
     local command="$1"
+    local client_id="$2"
+    local snapshot_id="$3"
     local repository_path="${REPOSITORY_PATH}"
     local repository_password="${REPOSITORY_PASSWORD}"
     local client_list_file="${REPOSITORY_CLIENT_LIST_FILE}"
@@ -343,6 +403,13 @@ function main() {
             ;;
         backup)
             backup "${repository_path}" "${repository_password}" "${client_list_file}"
+            ;;
+        snapshots)
+            snapshots "${repository_path}" "${repository_password}"
+            ;;
+        restore)
+            valiate_restore_args "${command}" "${client_id}" "${snapshot_id}"
+            snapshots "${repository_path}" "${repository_password}" "${client_list_file}"
             ;;
         *)
             log_error "Invalid command! Usage: bash backup_helper.sh <init|backup>"

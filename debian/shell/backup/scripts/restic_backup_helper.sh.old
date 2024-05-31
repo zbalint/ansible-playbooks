@@ -72,6 +72,13 @@ function disconnect_repository() {
     return 0
 }
 
+function list_snapshots() {
+    local repository_path="$1"
+    local repository_password="$2"
+
+    RESTIC_PASSWORD="${repository_password}" restic -r "${repository_path}" snapshots
+}
+
 function create_snapshot() {
     local repository_path="$1"
     local repository_password="$2"
@@ -80,7 +87,7 @@ function create_snapshot() {
     local remote_path="$5"
     local local_path="$6"
 
-    RESTIC_PASSWORD="${repository_password}" restic -r "${repository_path}" backup "${local_path}" --tag "${remote_user}@${remote_host}:${remote_path}"
+    RESTIC_PASSWORD="${repository_password}" restic -r "${repository_path}" backup "${local_path}" --tag "${remote_user}@${remote_host}:${remote_path}" --host "${remote_host}"
 }
 
 function init_repository() {
@@ -183,6 +190,8 @@ function init() {
             valiate_args_creds_only "${repository_path}" "${repository_password}"
         elif var_is_equals "${command}" "maintenance"; then
             valiate_args_creds_only "${repository_path}" "${repository_password}"
+        elif var_is_equals "${command}" "snapshots"; then
+            valiate_args_creds_only "${repository_path}" "${repository_password}"    
         else 
             valiate_args "${repository_path}" "${repository_password}" "${remote_user}" "${remote_host}" "${remote_path}" "${local_path}"
         fi
@@ -219,6 +228,12 @@ function main() {
         maintenance)
             connect_repository "${repository_path}" "${repository_password}" "${remote_user}" "${remote_host}" && \
             maintenance_repository "${repository_path}" "${repository_password}" && \
+            disconnect_repository || \
+            report_error
+            ;;
+        snapshots)
+            connect_repository "${repository_path}" "${repository_password}" "${remote_user}" "${remote_host}" && \
+            list_snapshots "${repository_path}" "${repository_password}" && \
             disconnect_repository || \
             report_error
             ;;

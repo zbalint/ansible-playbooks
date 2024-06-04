@@ -106,7 +106,7 @@ function sshfs_mount() {
     local local_path="$4"
     local sshfs_options="$5"
 
-    sshfs -o "${sshfs_options}" "${remote_user}@${remote_host}":"${remote_path}" "${local_path}" && \
+    sshfs -o "${sshfs_options}" "${remote_user}@${remote_host}:${remote_path}" "${local_path}" && \
     dir_is_exists "${local_path}" && \
     dir_is_mounted "${local_path}" && \
     save_mount_path "${local_path}"
@@ -120,7 +120,8 @@ function sshfs_umount() {
 
 function healthcheck() {
     local status="$1"
-    local healthchecks_io_id="$(get_healthchecks_io_id)"
+    local healthchecks_io_id
+    healthchecks_io_id="$(get_healthchecks_io_id)"
 
     # using curl (10 second timeout, retry up to 5 times):
 

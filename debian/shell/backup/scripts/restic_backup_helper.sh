@@ -25,45 +25,25 @@ readonly LOCAL_MOUNT_PATH_LIST_FILE="/tmp/restic_mount_path_list"
 readonly SSHFS_BACKUP_OPTIONS="ro,reconnect,cache=no,compression=no,Ciphers=chacha20-poly1305@openssh.com"
 readonly SSHFS_RESTORE_OPTIONS="reconnect,cache=no,compression=no,Ciphers=chacha20-poly1305@openssh.com"
 
-function log() {
-    local level="$1"; shift;
-    local message="$*"
+# script settings
+readonly COMMANDS=(init backup trigger forget prune status logs snapshots restore enable disable help)
 
-    echo "${BASH_SOURCE[0]} [${level}]: ${message}"
-}
-
-function log_info() {
-    local level="INFO "
-    local message="$*"
-
-    log "${level}" "${message}"
-}
-
-function log_warn() {
-    local level="WARN "
-    local message="$*"
-
-    log "${level}" "${message}"
-}
-
-function log_error() {
-    local level="ERROR"
-    local message="$*"
-
-    log "${level}" "${message}"
-}
+readonly BACKUP_FREQUENCY=daily
+readonly BACKUP_NAME=restic_backup
+readonly BACKUP_SERVICE=/etc/systemd/system/${BACKUP_NAME}.service
+readonly BACKUP_TIMER=/etc/systemd/system/${BACKUP_NAME}.timer
 
 function check_permissions() {
     if [[ $(stat -c "%a" "${BASH_SOURCE[0]}") != "700" ]]; then
-        log_error "Incorrect permissions on script. Run: "
-        log_info "  chmod 0700 $(realpath "${BASH_SOURCE[0]}")"
+        echo "Incorrect permissions on script. Run: "
+        echo "  chmod 0700 $(realpath "${BASH_SOURCE[0]}")"
         exit 1
     fi
 }
 
 function validate_restic_installation() {
     if ! command -v restic >/dev/null; then
-        log_error "You need to install restic."
+        echo "You need to install restic."
         exit 1
     fi
 }
@@ -201,6 +181,10 @@ function restic_check() {
     call_restic check --read-data-subset 10%
 }
 
+function restic_prune() {
+    call_restic prune
+}
+
 function restic_forget() {
     call_restic forget \
     --keep-yearly "${REPOSITORY_RETENTION_KEEP_YEARLY}" \
@@ -303,7 +287,118 @@ function restore_client() {
     sshfs_umount "${local_path}"
 }
 
-function init() {
+function help() { # = Show this help
+    echo "## restic_backup.sh Help:"
+    echo -e "# subcommand [ARG1] [ARG2]\t#  Help Description" | expand -t35
+    for cmd in "${COMMANDS[@]}"; do
+        annotation=$(grep -E "^function ${cmd}\(\) { # " "${BASH_SOURCE[0]}" | sed "s/^function ${cmd}() { # \(.*\)/\1/")
+        args=$(echo "${annotation}" | cut -d "=" -f1)
+        description=$(echo "${annotation}" | cut -d "=" -f2)
+        echo -e "${cmd} ${args}\t# ${description} " | expand -t35
+    done
+}
+
+function init() { # = Initialize restic repository
+    create_repository
+}
+
+function trigger() { # = Run backup now, by triggering the systemd service
+    (set -x; systemctl start ${BACKUP_NAME}.service)
+    echo "systemd is now running the backup job in the background. Check 'status' later."
+}
+
+function prune() { # = Remove old snapshots from repository
+    restic_prune
+}
+
+function forget() { # = Apply the configured data retention policy to the backend
+    restic_forget
+}
+
+function backup() { # = Run backup now
+    ## Test if running in a terminal and have enabled the backup service:
+    if [[ -t 0 ]] && [[ -f ${BACKUP_SERVICE} ]]; then
+        ## Run by triggering the systemd unit, so everything gets logged:
+        trigger
+    ## Not running interactive, or haven't run 'enable' yet, so run directly:
+    elif backup_clients; then
+        echo "Restic backup finished successfully."
+    else
+        echo "Restic backup failed!"
+        exit 1
+    fi
+}
+
+function restore() { # [user@host:path] = Restore data from snapshot (default 'latest')
+    local client="$1"
+    restore_client "${client}"
+}
+
+function snapshots() { # = List all snapshots
+    call_restic snapshots
+}
+
+function enable() { # = Schedule backups by installing systemd timer
+    cat <<EOF > ${BACKUP_SERVICE}
+[Unit]
+Description=restic_backup $(realpath "${BASH_SOURCE[0]}")
+After=network.target
+Wants=network.target
+
+[Service]
+Type=oneshot
+ExecStart=$(realpath "${BASH_SOURCE[0]}") backup
+EOF
+    cat <<EOF > ${BACKUP_TIMER}
+[Unit]
+Description=restic_backup $(realpath "${BASH_SOURCE[0]}") daily backups
+[Timer]
+OnCalendar=${BACKUP_FREQUENCY}
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
+
+    systemctl daemon-reload
+    systemctl enable --now ${BACKUP_NAME}.timer
+    systemctl status ${BACKUP_NAME} --no-pager
+    echo "You can watch the logs with this command:"
+    echo "   journalctl --unit ${BACKUP_NAME}"
+}
+
+function disable() { # = Disable scheduled backups and remove systemd timer
+    systemctl disable --now ${BACKUP_NAME}.timer
+    rm -f ${BACKUP_SERVICE} ${BACKUP_TIMER}
+    systemctl daemon-reload
+}
+
+function status() { # = Show the last and next backup times 
+    local repository_clients_list="${REPOSITORY_CLIENTS_FILE}"
+    # list clients
+    echo "Backup clients:"
+    while IFS= read -r client
+    do
+        echo "${client}"
+    done < "${repository_clients_list}"
+    # show repo path
+    echo "Repository path: $(get_repository_path)"
+
+    # show service logs
+    journalctl --unit ${BACKUP_NAME} --since yesterday | \
+        grep -E "(Restic backup finished successfully|Restic backup failed)" | \
+        sort | awk '{ gsub("Restic backup finished successfully", "\033[1;33m&\033[0m");
+                      gsub("Restic backup failed", "\033[1;31m&\033[0m"); print }'
+    echo "Run the 'logs' subcommand for more information."
+    (set -x; systemctl list-timers ${BACKUP_NAME} --no-pager)
+    call_restic stats
+}
+
+function logs() { # = Show recent service logs
+    set -x
+    journalctl --unit ${BACKUP_NAME} --since yesterday
+}
+
+function main() {
     check_permissions
     validate_restic_installation
 
@@ -311,30 +406,17 @@ function init() {
     file_is_exists "${REPOSITORY_PASS_FILE}" && \
     file_is_exists "${REPOSITORY_CLIENTS_FILE}" || \
     exit 1
+
+    if test $# = 0; then
+        help
+    else
+        CMD=$1; shift;
+        if [[ " ${COMMANDS[*]} " =~ ${CMD} ]]; then
+            ${CMD} "$@"
+        else
+            echo "Unknown command: ${CMD}" && exit 1
+        fi
+    fi
 }
 
-function main() {
-    local command="$1"
-    local args="$2"
-
-    case "${command}" in
-        init)
-            create_repository
-            ;;
-        backup)
-            backup_clients
-            ;;
-        restore)
-            local client="${args}"
-            restore_client "${client}"
-            ;;
-        snapshots)
-            call_restic snapshots
-            ;;
-        *)
-            ;;
-    esac
-}
-
-init && \
 main "$@"

@@ -9,6 +9,13 @@ readonly REPOSITORY_PATH_FILE="${CONFIG_DIRECTORY}/repository_path"
 readonly REPOSITORY_PASS_FILE="${CONFIG_DIRECTORY}/repository_pass"
 readonly REPOSITORY_CLIENTS_FILE="${CONFIG_DIRECTORY}/repository_clients"
 
+readonly REPOSITORY_RETENTION_KEEP_YEARLY=3
+readonly REPOSITORY_RETENTION_KEEP_MONTHLY=24
+readonly REPOSITORY_RETENTION_KEEP_WEEKLY=4
+readonly REPOSITORY_RETENTION_KEEP_DAILY=7
+readonly REPOSITORY_RETENTION_KEEP_HOURLY=48
+readonly REPOSITORY_RETENTION_KEEP_LAST=10
+
 # healthcheck.io settings consts
 readonly HEALTHCHECKS_IO_ID_FILE="${CONFIG_DIRECTORY}/healthchecks_io_id"
 
@@ -17,6 +24,49 @@ readonly LOCAL_MOUNT_PATH="/mnt"
 readonly LOCAL_MOUNT_PATH_LIST_FILE="/tmp/restic_mount_path_list"
 readonly SSHFS_BACKUP_OPTIONS="ro,reconnect,cache=no,compression=no,Ciphers=chacha20-poly1305@openssh.com"
 readonly SSHFS_RESTORE_OPTIONS="reconnect,cache=no,compression=no,Ciphers=chacha20-poly1305@openssh.com"
+
+function log() {
+    local level="$1"; shift;
+    local message="$*"
+
+    echo "${BASH_SOURCE[0]} [${level}]: ${message}"
+}
+
+function log_info() {
+    local level="INFO "
+    local message="$*"
+
+    log "${level}" "${message}"
+}
+
+function log_warn() {
+    local level="WARN "
+    local message="$*"
+
+    log "${level}" "${message}"
+}
+
+function log_error() {
+    local level="ERROR"
+    local message="$*"
+
+    log "${level}" "${message}"
+}
+
+function check_permissions() {
+    if [[ $(stat -c "%a" "${BASH_SOURCE[0]}") != "700" ]]; then
+        log_error "Incorrect permissions on script. Run: "
+        log_info "  chmod 0700 $(realpath "${BASH_SOURCE[0]}")"
+        exit 1
+    fi
+}
+
+function validate_restic_installation() {
+    if ! command -v restic >/dev/null; then
+        log_error "You need to install restic."
+        exit 1
+    fi
+}
 
 function file_is_exists() {
     local file="$1"
@@ -152,7 +202,14 @@ function restic_check() {
 }
 
 function restic_forget() {
-    call_restic forget --keep-yearly 3 --keep-monthly 24 --keep-weekly 4 --keep-daily 7 --keep-hourly 48 --keep-last 10 --prune
+    call_restic forget \
+    --keep-yearly "${REPOSITORY_RETENTION_KEEP_YEARLY}" \
+    --keep-monthly "${REPOSITORY_RETENTION_KEEP_MONTHLY}" \
+    --keep-weekly "${REPOSITORY_RETENTION_KEEP_WEEKLY}" \
+    --keep-daily "${REPOSITORY_RETENTION_KEEP_DAILY}" \
+    --keep-hourly "${REPOSITORY_RETENTION_KEEP_HOURLY}" \
+    --keep-last "${REPOSITORY_RETENTION_KEEP_LAST}" \
+    --prune
 }
 
 function restic_backup() {
@@ -247,6 +304,9 @@ function restore_client() {
 }
 
 function init() {
+    check_permissions
+    validate_restic_installation
+
     file_is_exists "${REPOSITORY_PATH_FILE}" && \
     file_is_exists "${REPOSITORY_PASS_FILE}" && \
     file_is_exists "${REPOSITORY_CLIENTS_FILE}" || \

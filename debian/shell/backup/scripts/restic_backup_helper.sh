@@ -33,18 +33,11 @@ readonly BACKUP_NAME=restic_backup
 readonly BACKUP_SERVICE=/etc/systemd/system/${BACKUP_NAME}.service
 readonly BACKUP_TIMER=/etc/systemd/system/${BACKUP_NAME}.timer
 
-function check_permissions() {
-    if [[ $(stat -c "%a" "${BASH_SOURCE[0]}") != "700" ]]; then
-        echo "Incorrect permissions on script. Run: "
-        echo "  chmod 0700 $(realpath "${BASH_SOURCE[0]}")"
-        exit 1
-    fi
-}
+function validate_file_permission() {
+    local file="$1"
 
-function validate_restic_installation() {
-    if ! command -v restic >/dev/null; then
-        echo "You need to install restic."
-        exit 1
+    if [[ $(stat -c "%a" "${file}") != "700" ]]; then
+        return 1
     fi
 }
 
@@ -129,6 +122,48 @@ function get_local_path() {
     echo "${local_path}"
 }
 
+function validate_restic_installation() {
+    if ! command -v restic >/dev/null; then
+        echo "You need to install restic."
+        exit 1
+    fi
+}
+
+function validate_script_permissions() {
+    if ! validate_file_permission "${BASH_SOURCE[0]}"; then
+        echo "Incorrect permissions on script. Run: "
+        echo "  chmod 0700 $(realpath "${BASH_SOURCE[0]}")"
+        exit 1
+    fi
+}
+
+function validate_config_files_and_permissions() {
+
+    if ! file_is_exists "${REPOSITORY_PATH_FILE}" || ! validate_file_permission "${REPOSITORY_PATH_FILE}"; then
+        echo "File does not exists or has incorrect permissions. Run: "
+        echo "  chmod 0700 $(realpath ${REPOSITORY_PATH_FILE})"
+        exit 1
+    fi
+
+    if ! file_is_exists "${REPOSITORY_PASS_FILE}" || ! validate_file_permission "${REPOSITORY_PASS_FILE}"; then
+        echo "File does not exists or has incorrect permissions. Run: "
+        echo "  chmod 0700 $(realpath ${REPOSITORY_PASS_FILE})"
+        exit 1
+    fi
+
+    if ! file_is_exists "${REPOSITORY_CLIENTS_FILE}" || ! validate_file_permission "${REPOSITORY_CLIENTS_FILE}"; then
+        echo "File does not exists or has incorrect permissions. Run: "
+        echo "  chmod 0700 $(realpath ${REPOSITORY_CLIENTS_FILE})"
+        exit 1
+    fi
+
+    if ! file_is_exists "${HEALTHCHECKS_IO_ID_FILE}" || ! validate_file_permission "${HEALTHCHECKS_IO_ID_FILE}"; then
+        echo "File does not exists or has incorrect permissions. Run: "
+        echo "  chmod 0700 $(realpath ${HEALTHCHECKS_IO_ID_FILE})"
+        exit 1
+    fi
+}
+
 function sshfs_mount() {
     local remote_user="$1"
     local remote_host="$2"
@@ -136,6 +171,8 @@ function sshfs_mount() {
     local local_path="$4"
     local sshfs_options="$5"
 
+    rm -f ~/.ssh/known_hosts && \
+    ssh-keyscan -t ssh-ed25519 "${remote_host}" >> ~/.ssh/known_hosts && \
     sshfs -o "${sshfs_options}" "${remote_user}@${remote_host}:${remote_path}" "${local_path}" && \
     dir_is_exists "${local_path}" && \
     dir_is_mounted "${local_path}" && \
@@ -399,13 +436,9 @@ function logs() { # = Show recent service logs
 }
 
 function main() {
-    check_permissions
     validate_restic_installation
-
-    file_is_exists "${REPOSITORY_PATH_FILE}" && \
-    file_is_exists "${REPOSITORY_PASS_FILE}" && \
-    file_is_exists "${REPOSITORY_CLIENTS_FILE}" || \
-    exit 1
+    validate_script_permissions
+    validate_config_files_and_permissions
 
     if test $# = 0; then
         help

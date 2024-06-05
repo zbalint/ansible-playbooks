@@ -1,0 +1,6 @@
+[Unit]
+Description=Restic backup service
+
+[Service]
+Type=oneshot
+ExecStart=/root/restic_backup/restic_backup_helper.sh

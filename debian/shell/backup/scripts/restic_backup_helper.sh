@@ -167,8 +167,9 @@ function restic_restore() {
     local restore_path="$1"
     local backup_tag="$2"
     local backup_host="$3"
+    local backup_path="$4"
 
-    call_restic restore latest --tag "${backup_tag}" --host "${backup_host}" --target "${restore_path}"
+    call_restic restore latest --tag "${backup_tag}" --host "${backup_host}" --path "${backup_path}" --target "${restore_path}"
 }
 
 function create_repository() {
@@ -189,10 +190,11 @@ function restore_backup() {
     local local_path="$1"
     local backup_tag="$2"
     local backup_host="$3"
+    local backup_path="$4"
 
     dir_is_exists "${local_path}" && \
     dir_is_mounted "${local_path}" && \
-    restic_restore "${local_path}" "${backup_tag}" "${backup_host}"
+    restic_restore "${local_path}" "${backup_tag}" "${backup_host}" "${backup_path}"
 }
 
 function backup_client() {
@@ -240,7 +242,7 @@ function restore_client() {
     local_path=$(get_local_path "${remote_host}" "${remote_path}")
 
     sshfs_mount "${remote_user}" "${remote_host}" "${remote_path}" "${local_path}" "${SSHFS_RESTORE_OPTIONS}" && \
-    restore_backup "/" "${remote_user}@${remote_host}:${remote_path}" "${remote_host}"
+    restore_backup "/" "${remote_user}@${remote_host}:${remote_path}" "${remote_host}" "${local_path}"
     sshfs_umount "${local_path}"
 }
 

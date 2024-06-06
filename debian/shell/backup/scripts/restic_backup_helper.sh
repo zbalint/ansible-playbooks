@@ -28,7 +28,7 @@ readonly SSHFS_RESTORE_OPTIONS="reconnect,cache=no,compression=no,Ciphers=chacha
 # script settings
 readonly COMMANDS=(init backup trigger forget prune status logs snapshots restore enable disable help)
 
-readonly BACKUP_FREQUENCY=daily
+readonly BACKUP_FREQUENCY="*-*-* 00,06,12,18:00:00"
 readonly BACKUP_NAME=restic_backup
 readonly BACKUP_SERVICE=/etc/systemd/system/${BACKUP_NAME}.service
 readonly BACKUP_TIMER=/etc/systemd/system/${BACKUP_NAME}.timer
@@ -428,6 +428,8 @@ function status() { # = Show the last and next backup times
     echo "Run the 'logs' subcommand for more information."
     (set -x; systemctl list-timers ${BACKUP_NAME} --no-pager)
     call_restic stats
+    echo "Repository size on disk:"
+    du -sh "$(get_repository_path)"
 }
 
 function logs() { # = Show recent service logs

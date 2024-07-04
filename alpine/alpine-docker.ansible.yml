@@ -7,13 +7,6 @@
     community.general.apk:
       name: bash,docker,docker-compose,tailscale
       update_cache: true
-  - name: Download setup_alpine_kopia.sh
-    ansible.builtin.get_url:
-      url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_alpine_kopia.sh
-      dest: /run/setup_alpine_kopia.sh
-      mode: '0440'
-  - name: Run setup_alpine_kopia.sh
-    command: bash /run/setup_alpine_kopia.sh
   - name: Create user "tartarus"
     ansible.builtin.user:
       name: tartarus

@@ -3,13 +3,6 @@
   hosts: localhost
   connection: local
   tasks:
-  - name: Download setup_tailscale.sh
-    ansible.builtin.get_url:
-      url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_tailscale.sh
-      dest: /run/setup_tailscale.sh
-      mode: '0440'
-  - name: Install tailscale
-    command: bash /run/setup_tailscale.sh
   - name: Download setup_debian_kopia.sh
     ansible.builtin.get_url:
       url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_debian_kopia.sh
@@ -17,13 +10,12 @@
       mode: '0440'
   - name: Setup kopia repo
     command: bash /run/setup_debian_kopia.sh
-  - name: Apt update
+  - name: Update repositories cache
     ansible.builtin.apt:
       update_cache: yes
-  - name: Update repositories cache and install "ufw" package
+  - name: Install packages
     ansible.builtin.apt:
       name: ufw,rclone,sshfs,restic,kopia
-      update_cache: yes
   - name: Run restic self-update
     command: restic self-update
   - name: Run restic self-update

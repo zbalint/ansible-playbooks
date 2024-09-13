@@ -14,7 +14,3 @@
       mode: '0440'
   - name: Install tailscale
     command: bash /run/setup_tailscale.sh
-  - name: Create user "tartarus"
-    ansible.builtin.user:
-      name: tartarus
-      uid: 4000

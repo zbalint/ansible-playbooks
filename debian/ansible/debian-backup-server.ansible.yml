@@ -1,5 +1,5 @@
 ---
-- name: Setup backup server on Debian
+- name: Setup restia backup server on Debian
   hosts: localhost
   connection: local
   tasks:
@@ -15,7 +15,7 @@
       update_cache: yes
   - name: Install packages
     ansible.builtin.apt:
-      name: ufw,rclone,sshfs,restic,kopia
+      name: ufw,git,rclone,sshfs,restic,kopia
   - name: Run restic self-update
     command: restic self-update
   - name: Run restic self-update
@@ -27,3 +27,19 @@
       ufw default allow outgoing
       ufw allow in on tailscale0
       ufw reload
+  - name: Create "/root/restia" directory
+    ansible.builtin.file:
+      path: /root/restia
+      state: directory
+      mode: '0700'
+  - name: Create "/mnt/restia" directory
+    ansible.builtin.file:
+      path: /mnt/restia
+      state: directory
+      mode: '0700'
+  - name: Clone restia repository
+    ansible.builtin.git:
+      repo: https://github.com/zbalint/restia.git
+      dest: /root/restia
+      clone: yes
+      update: yes

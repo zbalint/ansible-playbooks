@@ -7,6 +7,3 @@ chmod a+r /etc/apt/keyrings/kopia-keyring.gpg
 
 # Add the repository to Apt sources:
 echo "deb [signed-by=/etc/apt/keyrings/kopia-keyring.gpg] http://packages.kopia.io/apt/ stable main" | tee /etc/apt/sources.list.d/kopia.list
-
-apt-get update && \
-apt-get install kopia -y

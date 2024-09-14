@@ -83,7 +83,7 @@
             }
           }
         }
-  - name: Reload docker to set runsc as default runtime
+  - name: Remove ansible comments from daemon.json
     ansible.builtin.shell: |
       cat /etc/docker/daemon.json | grep -v "#" > /tmp/daemon.json
       mv /tmp/daemon.json /etc/docker/daemon.json

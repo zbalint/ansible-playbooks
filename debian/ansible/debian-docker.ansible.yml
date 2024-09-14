@@ -3,9 +3,9 @@
   hosts: localhost
   connection: local
   tasks:
-  - name: Update repositories cache and install "ufw" package
+  - name: Update repositories cache and install packages
     ansible.builtin.apt:
-      name: ufw
+      name: ufw,unattended-upgrades,apt-config-auto-update
       update_cache: yes
   - name: Put docker behind ufw
     ansible.builtin.blockinfile:
@@ -26,7 +26,10 @@
       ufw enable
       ufw default deny incoming
       ufw default allow outgoing
-      ufw allow in on tailscale0
+      ufw allow in on tailscale0 from 100.64.1.1 proto tcp to any port 22
+      ufw allow in on tailscale0 from 100.80.100.101 proto tcp to any port 80
+      ufw allow in on tailscale0 from 100.80.100.102 proto tcp to any port 80
+      ufw allow in on tailscale0 from 100.80.100.103 proto tcp to any port 80
       ufw reload
   - name: Download setup_debian_docker.sh
     ansible.builtin.get_url:

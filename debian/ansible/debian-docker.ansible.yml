@@ -3,7 +3,7 @@
   hosts: localhost
   connection: local
   tasks:
-  - name: Update repositories cache and install packages
+  - name: Update repositories cache and install firewall and unattended upgrades
     ansible.builtin.apt:
       name: ufw,unattended-upgrades,apt-config-auto-update
       update_cache: yes

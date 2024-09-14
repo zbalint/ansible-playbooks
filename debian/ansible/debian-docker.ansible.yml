@@ -85,6 +85,10 @@
         }
   - name: Reload docker to set runsc as default runtime
     ansible.builtin.shell: |
+      cat /etc/docker/daemon.json | grep -v "#" > /tmp/daemon.json
+      mv /tmp/daemon.json /etc/docker/daemon.json
+  - name: Reload docker to set runsc as default runtime
+    ansible.builtin.shell: |
       systemctl reload docker
   - name: Setup repository and install tailscale
     ansible.builtin.shell: |

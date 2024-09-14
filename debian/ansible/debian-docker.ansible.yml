@@ -24,7 +24,7 @@
   - name: Clean up custom rules in order to mess with the ufw reload
     ansible.builtin.blockinfile:
       path: /etc/ufw/before.init
-      insertafter: "stop)"
+      insertafter: "stop"
       block: |
         iptables -F DOCKER-USER || true
   - name: Changing perm of "/etc/ufw/before.init", adding "+x"

@@ -3,9 +3,9 @@
   hosts: localhost
   connection: local
   tasks:
-  - name: Update repositories cache and install firewall and unattended upgrades
+  - name: Update repositories cache and install packages
     ansible.builtin.apt:
-      name: ufw,unattended-upgrades,apt-config-auto-update
+      name: ufw,unattended-upgrades,apt-config-auto-update,apt-transport-https,ca-certificates,curl,gnupg
       update_cache: yes
   - name: Put docker behind ufw
     ansible.builtin.blockinfile:
@@ -40,20 +40,51 @@
       ufw allow in on tailscale0 from 100.80.100.102 proto tcp to any port 80
       ufw allow in on tailscale0 from 100.80.100.103 proto tcp to any port 80
       ufw reload
-  - name: Download setup_debian_docker.sh
-    ansible.builtin.get_url:
-      url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_debian_docker.sh
-      dest: /run/setup_debian_docker.sh
-      mode: '0440'
+  - name: Setup docker repository
+    ansible.builtin.shell: |
+      install -m 0755 -d /etc/apt/keyrings
+      curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+      chmod a+r /etc/apt/keyrings/docker.gpg
+      echo \
+      "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+      "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+      tee /etc/apt/sources.list.d/docker.list > /dev/null
   - name: Install docker
-    command: bash /run/setup_debian_docker.sh
-  - name: Download setup_tailscale.sh
-    ansible.builtin.get_url:
-      url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_tailscale.sh
-      dest: /run/setup_tailscale.sh
-      mode: '0440'
-  - name: Install tailscale
-    command: bash /run/setup_tailscale.sh
+    ansible.builtin.apt:
+      name: docker-ce,docker-ce-cli,containerd.io,docker-buildx-plugin,docker-compose-plugin
+      update_cache: yes
+  - name: Setup gvisor repository
+    ansible.builtin.shell: |
+      curl -fsSL https://gvisor.dev/archive.key | sudo gpg --dearmor -o /usr/share/keyrings/gvisor-archive-keyring.gpg
+      echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/gvisor-archive-keyring.gpg] https://storage.googleapis.com/gvisor/releases \ 
+      release main" | sudo tee /etc/apt/sources.list.d/gvisor.list > /dev/null
+  - name: Install gvisor
+    ansible.builtin.apt:
+      name: runsc
+      update_cache: yes
+  - name: Set gvisor as default docker runtime
+    ansible.builtin.blockinfile:
+      path: /etc/docker/daemon.json
+      block: |
+        {
+          "default-runtime": "runsc",
+          "runtimes": {
+            "runsc": {
+              "path": "/usr/local/bin/runsc"
+              "runtimeArgs": [
+                "--platform=systrap"
+              ]
+            }
+          }
+        }
+  - name: Reload docker to set runsc as default runtime
+    ansible.builtin.shell: |
+      systemctl reload docker
+  - name: Setup repository and install tailscale
+    ansible.builtin.shell: |
+      curl -fsSL https://tailscale.com/install.sh | sh
+      tailscale set --auto-update
   - name: Create user "tartarus"
     ansible.builtin.user:
       name: tartarus

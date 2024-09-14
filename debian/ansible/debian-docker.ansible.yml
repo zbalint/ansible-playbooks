@@ -31,8 +31,10 @@
     file: dest=/etc/ufw/before.init mode=a+x
   - name: Setup UFW rules
     ansible.builtin.shell: |
+      ufw enable
       ufw disable
       ufw enable
+      ufw reload
       ufw default deny incoming
       ufw default allow outgoing
       ufw allow in on tailscale0 from 100.64.1.1 proto tcp to any port 22
@@ -57,12 +59,14 @@
     ansible.builtin.shell: |
       curl -fsSL https://gvisor.dev/archive.key | sudo gpg --dearmor -o /usr/share/keyrings/gvisor-archive-keyring.gpg
       echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/gvisor-archive-keyring.gpg] https://storage.googleapis.com/gvisor/releases \ 
-      release main" | sudo tee /etc/apt/sources.list.d/gvisor.list > /dev/null
+      "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/gvisor-archive-keyring.gpg] https://storage.googleapis.com/gvisor/releases release main" | sudo tee /etc/apt/sources.list.d/gvisor.list > /dev/null
   - name: Install gvisor
     ansible.builtin.apt:
       name: runsc
       update_cache: yes
+  - name: Create runsc symlink
+    ansible.builtin.shell: |
+      ln -s /usr/bin/runsc /usr/local/bin/runsc
   - name: Set gvisor as default docker runtime
     ansible.builtin.blockinfile:
       path: /etc/docker/daemon.json
@@ -71,7 +75,7 @@
           "default-runtime": "runsc",
           "runtimes": {
             "runsc": {
-              "path": "/usr/local/bin/runsc"
+              "path": "/usr/local/bin/runsc",
               "runtimeArgs": [
                 "--platform=systrap"
               ]

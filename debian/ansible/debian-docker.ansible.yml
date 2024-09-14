@@ -31,6 +31,7 @@
     file: dest=/etc/ufw/before.init mode=a+x
   - name: Setup UFW rules
     ansible.builtin.shell: |
+      ufw disable
       ufw enable
       ufw default deny incoming
       ufw default allow outgoing

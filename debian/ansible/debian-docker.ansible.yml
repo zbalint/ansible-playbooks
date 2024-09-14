@@ -7,6 +7,27 @@
     ansible.builtin.apt:
       name: ufw
       update_cache: yes
+  - name: Put docker behind ufw
+    ansible.builtin.blockinfile:
+    path: /etc/ufw/after.rules
+    block: |
+      # Put Docker behind UFW
+      *filter
+      :DOCKER-USER - [0:0]
+      :ufw-user-input - [0:0]
+
+      -A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+      -A DOCKER-USER -m conntrack --ctstate INVALID -j DROP
+      -A DOCKER-USER -i eth0 -j ufw-user-input
+      -A DOCKER-USER -i eth0 -j DROP
+      COMMIT
+  - name: Setup UFW rules
+    ansible.builtin.shell: |
+      ufw enable
+      ufw default deny incoming
+      ufw default allow outgoing
+      ufw allow in on tailscale0
+      ufw reload
   - name: Download setup_debian_docker.sh
     ansible.builtin.get_url:
       url: https://raw.githubusercontent.com/zbalint/ansible-playbooks/master/debian/shell/setup_debian_docker.sh

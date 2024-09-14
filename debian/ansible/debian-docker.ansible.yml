@@ -21,6 +21,14 @@
         -A DOCKER-USER -i eth0 -j ufw-user-input
         -A DOCKER-USER -i eth0 -j DROP
         COMMIT
+  - name: Clean up custom rules in order to mess with the ufw reload
+    ansible.builtin.blockinfile:
+      path: /etc/ufw/before.init
+      insertafter: "stop)"
+      block: |
+        iptables -F DOCKER-USER || true
+  - name: Changing perm of "/etc/ufw/before.init", adding "+x"
+    file: dest=/etc/ufw/before.init mode=a+x
   - name: Setup UFW rules
     ansible.builtin.shell: |
       ufw enable

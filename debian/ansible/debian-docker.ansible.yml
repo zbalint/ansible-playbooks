@@ -38,9 +38,9 @@
       ufw default deny incoming
       ufw default allow outgoing
       ufw allow in on tailscale0 from 100.64.1.1 proto tcp to any port 22
-      ufw allow in on tailscale0 from 100.80.100.101 proto tcp to any port 80
-      ufw allow in on tailscale0 from 100.80.100.102 proto tcp to any port 80
-      ufw allow in on tailscale0 from 100.80.100.103 proto tcp to any port 80
+      ufw allow in on tailscale0 from 100.80.100.101 proto tcp to any port 8080
+      ufw allow in on tailscale0 from 100.80.100.102 proto tcp to any port 8080
+      ufw allow in on tailscale0 from 100.80.100.103 proto tcp to any port 8080
       ufw reload
   - name: Setup docker repository
     ansible.builtin.shell: |

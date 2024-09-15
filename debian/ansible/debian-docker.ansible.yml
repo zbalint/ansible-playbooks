@@ -29,7 +29,7 @@
         iptables -F DOCKER-USER || true
   - name: Changing perm of "/etc/ufw/before.init", adding "+x"
     file: dest=/etc/ufw/before.init mode=a+x
-  - name: Setup UFW rules
+  - name: Setup UFW rules (the ts rules does not take effect because tailscale bypass them)
     ansible.builtin.shell: |
       ufw enable
       ufw disable

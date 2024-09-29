@@ -46,7 +46,7 @@ function set_timezone() {
 function insall_apks() {
     apt update && \
     apt upgrade -y && \
-    apt install -y curl wget htop tmux nano git unattended-upgrades apt-config-auto-update apt-transport-https ca-certificates gnupg ufw xfce4 xfce4-goodies dbus-x11 tightvncserver
+    apt install -y curl wget htop btop tmux fish neovim nano git unattended-upgrades apt-config-auto-update apt-transport-https ca-certificates gnupg ufw xfce4 xfce4-goodies dbus-x11 tightvncserver
 }
 
 function install_vscodium_ide() {
@@ -68,6 +68,14 @@ Pin: origin packages.mozilla.org
 Pin-Priority: 1000
 ' | tee /etc/apt/preferences.d/mozilla  && \
     apt update && apt install -y firefox
+}
+
+function install_rclone() {
+    sudo -v ; curl https://rclone.org/install.sh | sudo bash
+}
+
+function install_kopia() {
+
 }
 
 function install_tailscale() {

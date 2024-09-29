@@ -75,7 +75,7 @@ function install_rclone() {
 }
 
 function install_kopia() {
-
+    return 0 
 }
 
 function install_tailscale() {

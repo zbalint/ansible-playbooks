@@ -2,12 +2,22 @@
 - name: Setup Docker on Debian in VM
   hosts: localhost
   connection: local
+  become: true
+
   tasks:
-  - name: Update repositories cache and install packages
+  - name: Install required packages
     ansible.builtin.apt:
-      name: ufw,unattended-upgrades,apt-config-auto-update,apt-transport-https,ca-certificates,curl,gnupg
+      name:
+        - ufw
+        - unattended-upgrades
+        - apt-config-auto-update
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg
       update_cache: yes
-  - name: Put docker behind ufw
+
+  - name: Configure UFW for Docker
     ansible.builtin.blockinfile:
       path: /etc/ufw/after.rules
       block: |
@@ -15,105 +25,135 @@
         *filter
         :DOCKER-USER - [0:0]
         :ufw-user-input - [0:0]
-
         -A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
         -A DOCKER-USER -m conntrack --ctstate INVALID -j DROP
         -A DOCKER-USER -i eth0 -j ufw-user-input
         -A DOCKER-USER -i eth0 -j DROP
         COMMIT
-  - name: Clean up custom rules in order to mess with the ufw reload
+
+  - name: Clean up custom UFW rules
     ansible.builtin.blockinfile:
       path: /etc/ufw/before.init
       insertafter: 'stop\)'
       block: |
         iptables -F DOCKER-USER || true
-  - name: Changing perm of "/etc/ufw/before.init", adding "+x"
-    file: dest=/etc/ufw/before.init mode=a+x
-  - name: Setup UFW rules (the ts rules does not take effect because tailscale bypass them)
-    ansible.builtin.shell: |
-      ufw enable
-      ufw disable
-      ufw enable
-      ufw reload
-      ufw default deny incoming
-      ufw default allow outgoing
-      ufw allow in on tailscale0 from 100.64.1.1 proto tcp to any port 22
-      ufw allow in on tailscale0 from 100.80.100.101 proto tcp to any port 8080
-      ufw allow in on tailscale0 from 100.80.100.102 proto tcp to any port 8080
-      ufw allow in on tailscale0 from 100.80.100.103 proto tcp to any port 8080
-      ufw reload
-  - name: Setup docker repository
-    ansible.builtin.shell: |
-      install -m 0755 -d /etc/apt/keyrings
-      curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-      chmod a+r /etc/apt/keyrings/docker.gpg
-      echo \
-      "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
-      "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
-      tee /etc/apt/sources.list.d/docker.list > /dev/null
-  - name: Install docker
+
+  - name: Ensure before.init is executable
+    ansible.builtin.file:
+      path: /etc/ufw/before.init
+      mode: 'a+x'
+
+  - name: Setup UFW defaults
+    community.general.ufw:
+      state: enabled
+      direction: incoming
+      policy: deny
+
+  - name: Allow UFW outgoing
+    community.general.ufw:
+      direction: outgoing
+      policy: allow
+
+  - name: Allow Tailscale SSH and app ports
+    community.general.ufw:
+      rule: allow
+      interface: tailscale0
+      proto: tcp
+      port: "{{ item.port }}"
+      from_ip: "{{ item.ip }}"
+    loop:
+      - { ip: "100.64.1.1", port: "22" }
+      - { ip: "100.80.100.101", port: "8080" }
+      - { ip: "100.80.100.102", port: "8080" }
+      - { ip: "100.80.100.103", port: "8080" }
+
+  - name: Add Docker repository
+    ansible.builtin.apt_repository:
+      repo: "deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+      filename: docker
+      state: present
+    register: docker_repo
+
+  - name: Add Docker GPG key
+    ansible.builtin.get_url:
+      url: https://download.docker.com/linux/debian/gpg
+      dest: /etc/apt/keyrings/docker.gpg
+      mode: '0644'
+
+  - name: Install Docker
     ansible.builtin.apt:
-      name: docker-ce,docker-ce-cli,containerd.io,docker-buildx-plugin,docker-compose-plugin
+      name:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+        - docker-buildx-plugin
+        - docker-compose-plugin
       update_cache: yes
-  - name: Setup gvisor repository
-    ansible.builtin.shell: |
-      curl -fsSL https://gvisor.dev/archive.key | sudo gpg --dearmor -o /usr/share/keyrings/gvisor-archive-keyring.gpg
-      echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/gvisor-archive-keyring.gpg] https://storage.googleapis.com/gvisor/releases release main" | sudo tee /etc/apt/sources.list.d/gvisor.list > /dev/null
-  - name: Install gvisor
+
+  - name: Add gVisor repository
+    ansible.builtin.apt_repository:
+      repo: "deb [arch={{ ansible_architecture }} signed-by=/usr/share/keyrings/gvisor-archive-keyring.gpg] https://storage.googleapis.com/gvisor/releases release main"
+      filename: gvisor
+      state: present
+
+  - name: Add gVisor GPG key
+    ansible.builtin.get_url:
+      url: https://gvisor.dev/archive.key
+      dest: /usr/share/keyrings/gvisor-archive-keyring.gpg
+      mode: '0644'
+
+  - name: Install gVisor runtime
     ansible.builtin.apt:
       name: runsc
       update_cache: yes
-  - name: Create runsc symlink
-    ansible.builtin.shell: |
-      ln -s /usr/bin/runsc /usr/local/bin/runsc
-  - name: Set gvisor as default docker runtime
-    ansible.builtin.blockinfile:
-      create: true
-      path: /etc/docker/daemon.json
-      block: |
+
+  - name: Symlink runsc
+    ansible.builtin.file:
+      src: /usr/bin/runsc
+      dest: /usr/local/bin/runsc
+      state: link
+
+  - name: Configure Docker to use gVisor
+    ansible.builtin.copy:
+      dest: /etc/docker/daemon.json
+      content: |
         {
           "default-runtime": "runsc",
           "runtimes": {
             "runsc": {
               "path": "/usr/local/bin/runsc",
-              "runtimeArgs": [
-                "--platform=systrap"
-              ]
+              "runtimeArgs": ["--platform=systrap"]
             }
           }
         }
-  - name: Remove ansible comments from daemon.json
-    ansible.builtin.shell: |
-      cat /etc/docker/daemon.json | grep -v "#" > /tmp/daemon.json
-      mv /tmp/daemon.json /etc/docker/daemon.json
-  - name: Reload docker to set runsc as default runtime
-    ansible.builtin.shell: |
-      systemctl reload docker
-  - name: Setup repository and install tailscale
-    ansible.builtin.shell: |
-      curl -fsSL https://tailscale.com/install.sh | sh
-      tailscale set --auto-update
+      mode: '0644'
+
+  - name: Reload Docker
+    ansible.builtin.systemd:
+      name: docker
+      state: reloaded
+
+  - name: Install Tailscale
+    ansible.builtin.shell: curl -fsSL https://tailscale.com/install.sh | sh
+
+  - name: Enable Tailscale auto-update
+    ansible.builtin.shell: tailscale set --auto-update
+
   - name: Create user "tartarus"
     ansible.builtin.user:
       name: tartarus
       uid: 4000
       groups: docker
       shell: /bin/bash
-  - name: Create "/opt/docker/stacks" directory
+
+  - name: Create Docker directories
     ansible.builtin.file:
-      path: /opt/docker/stacks
+      path: "{{ item }}"
       state: directory
       mode: '0755'
-  - name: Create "/opt/docker/volumes" directory
-    ansible.builtin.file:
-      path: /opt/docker/volumes
-      state: directory
-      mode: '0755'
-  - name: Recursively change ownership of '/opt/docker' directory
-    ansible.builtin.file:
-      path: /opt/docker
-      state: directory
-      recurse: yes
       owner: tartarus
       group: tartarus
+    loop:
+      - /opt/docker/stacks
+      - /opt/docker/volumes
+      - /opt/docker
